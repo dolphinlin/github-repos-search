@@ -25,7 +25,7 @@ export const useRepos = () => {
   const [data, setData] = useState<RepoItem[]>([]);
   const [keyword, setKeyword] = useState('');
 
-  const hasMore = useMemo(() => linkRef?.page, [linkRef]);
+  const hasMore = useMemo(() => !!linkRef?.page, [linkRef]);
 
   const fetchReposData = useCallback(async (keyword: string, page: number) => {
     setLoading(true);
