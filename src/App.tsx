@@ -1,24 +1,37 @@
-import React from 'react';
-import logo from './logo.svg';
+import { useCallback } from 'react';
+import type { InputHTMLAttributes } from 'react';
+
 import './App.css';
 
+import List from './components/List';
+
+import { useRepos } from './hooks/useRepos';
+
 function App() {
+  const repos = useRepos();
+
+  const handleKeywordChange = useCallback<
+    NonNullable<InputHTMLAttributes<HTMLInputElement>['onChange']>
+  >(
+    e => {
+      repos.setKeyword(e.target.value);
+    },
+    [repos.setKeyword],
+  );
+
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <input type="text" onChange={handleKeywordChange} />
+      <List
+        items={repos.data}
+        hasMore={repos.hasMore}
+        onLoad={() => console.log('load new data')}
+      />
+      {repos.isLoading ? (
+        <div className="laoding">Loading...</div>
+      ) : (
+        repos.hasMore && <button onClick={repos.next}>More</button>
+      )}
     </div>
   );
 }
