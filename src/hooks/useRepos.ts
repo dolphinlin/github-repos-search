@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import parseLinkHeader from 'parse-link-header';
 
 import { getReposByQuery } from '../services/api';
 import { RepoItem } from '../services/types';
@@ -10,42 +11,52 @@ import {
 } from '../services/config';
 import { debounce, throttleAPI } from '../services/utils';
 
-const throttledGetRepos = throttleAPI(getReposByQuery, 5, 60 * 1000);
+interface LinkRef {
+  page: number;
+  per_page: number;
+  q: string;
+}
+
+const throttledGetRepos = throttleAPI(getReposByQuery, 8, 60 * 1000);
 
 export const useRepos = () => {
+  const [linkRef, setLinkRef] = useState<LinkRef | null>(null);
   const [isLoading, setLoading] = useState(false);
   const [data, setData] = useState<RepoItem[]>([]);
   const [keyword, setKeyword] = useState('');
-  const [currentPage, setPage] = useState(1);
-  const [currentMax, setMax] = useState(-1);
 
-  const hasMore = useMemo(
-    () =>
-      data.length > 0 &&
-      data.length < currentMax &&
-      data.length < MAX_REPO_SIZE,
-    [currentMax, data],
-  );
+  const hasMore = useMemo(() => linkRef?.page, [linkRef]);
 
   const fetchReposData = useCallback(async (keyword: string, page: number) => {
     setLoading(true);
-    const result = await throttledGetRepos(keyword, page, REPO_SIZE);
+    const result = await throttledGetRepos({
+      q: keyword,
+      page,
+      size: REPO_SIZE,
+    });
+
+    const { link } = result.headers;
+    if (link) {
+      const parsed = parseLinkHeader(link);
+
+      /**
+       * @TODO type assert
+       */
+      setLinkRef((parsed?.next as any) ?? null);
+    }
 
     if (page === 1) {
       setData(result.data.items);
     } else {
       setData(preData => preData.concat(result.data.items));
     }
-    setMax(result.data.total_count);
     setLoading(false);
   }, []);
 
   const next = async () => {
-    if (isLoading) return;
+    if (isLoading || !linkRef) return;
 
-    fetchReposData(keyword, currentPage + 1).then(() =>
-      setPage(pre => pre + 1),
-    );
+    fetchReposData(linkRef.q, linkRef.page);
   };
 
   const init = useMemo(
