@@ -12,7 +12,6 @@ const Container = styled.div`
   margin: 8px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
   overflow-y: scroll;
 `;
@@ -61,6 +60,7 @@ const List = ({ items, hasMore, onLoad: handleLoad }: Props) => {
       {items.map(item => (
         <Item
           key={item.id}
+          id={`${item.id}`}
           name={item.full_name}
           starsCount={item.stargazers_count}
           owner={item.owner.login}
