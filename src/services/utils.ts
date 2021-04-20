@@ -42,7 +42,6 @@ export function throttleAPI<T extends (...args: any[]) => Promise<any>>(
 
     const { params, complete } = task;
 
-    isRunning = true;
     fn(...params).then(result => {
       complete(result);
       completeArr.push({
@@ -60,6 +59,7 @@ export function throttleAPI<T extends (...args: any[]) => Promise<any>>(
   const processQueue = () => {
     if (isRunning) return;
 
+    isRunning = true;
     if (Date.now() - startTime < ms) {
       if (completeArr.length < calls) {
         runTask();
