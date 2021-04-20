@@ -13,9 +13,6 @@ import { debounce, throttleAPI } from '../services/utils';
 const throttledGetRepos = throttleAPI(getReposByQuery, 5, 60 * 1000);
 
 export const useRepos = () => {
-  const queue = useRef<Promise<any> | null>(null);
-  const throttleTimer = useRef(-1);
-  const debouncedTimer = useRef(-1);
   const [isLoading, setLoading] = useState(false);
   const [data, setData] = useState<RepoItem[]>([]);
   const [keyword, setKeyword] = useState('');
