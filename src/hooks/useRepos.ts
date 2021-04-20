@@ -8,7 +8,9 @@ import {
   KEYWORD_DEBOUNCED_TIME,
   TASK_SLEEP_TIME,
 } from '../services/config';
-import { debounce } from '../services/utils';
+import { debounce, throttleAPI } from '../services/utils';
+
+const throttledGetRepos = throttleAPI(getReposByQuery, 5, 60 * 1000);
 
 export const useRepos = () => {
   const queue = useRef<Promise<any> | null>(null);
@@ -30,7 +32,7 @@ export const useRepos = () => {
 
   const fetchReposData = useCallback(async (keyword: string, page: number) => {
     setLoading(true);
-    const result = await getReposByQuery(keyword, page, REPO_SIZE);
+    const result = await throttledGetRepos(keyword, page, REPO_SIZE);
 
     if (page === 1) {
       setData(result.data.items);
@@ -44,11 +46,9 @@ export const useRepos = () => {
   const next = async () => {
     if (isLoading) return;
 
-    setPage(prePage => {
-      fetchReposData(keyword, prePage + 1);
-
-      return prePage + 1;
-    });
+    fetchReposData(keyword, currentPage + 1).then(() =>
+      setPage(pre => pre + 1),
+    );
   };
 
   const init = useMemo(
