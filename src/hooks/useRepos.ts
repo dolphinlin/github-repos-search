@@ -7,9 +7,11 @@ import {
   REPO_SIZE,
   MAX_REPO_SIZE,
   KEYWORD_DEBOUNCED_TIME,
-  TASK_SLEEP_TIME,
+  RATE_LIMIT_LIMIT,
+  RATE_LIMIT_DURATION,
+  ResponseHeader,
 } from '../services/config';
-import { debounce, throttleAPI } from '../services/utils';
+import { debounce, throttleAPI, ms2s } from '../services/utils';
 
 interface LinkRef {
   page: number;
@@ -17,7 +19,16 @@ interface LinkRef {
   q: string;
 }
 
-const throttledGetRepos = throttleAPI(getReposByQuery, 8, 60 * 1000);
+const throttledGetRepos = throttleAPI(getReposByQuery, res => {
+  const { headers } = res;
+
+  return {
+    limit: headers[ResponseHeader.limit] ?? RATE_LIMIT_LIMIT,
+    used: headers[ResponseHeader.used] ?? 0,
+    resetTime:
+      headers[ResponseHeader.reset] ?? ms2s(Date.now() + RATE_LIMIT_DURATION),
+  };
+});
 
 export const useRepos = () => {
   const [linkRef, setLinkRef] = useState<LinkRef | null>(null);

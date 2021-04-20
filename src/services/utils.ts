@@ -1,3 +1,7 @@
+import { AxiosResponse } from 'axios';
+
+export const ms2s = (ms: number) => Math.floor(ms / 1000);
+
 export const sleep = (ms: number) =>
   new Promise(resolve => {
     window.setTimeout(() => {
@@ -25,12 +29,21 @@ interface QueueItem {
   complete: (value: any) => void;
 }
 
-export function throttleAPI<T extends (...args: any[]) => Promise<any>>(
-  fn: T,
-  calls: number,
-  ms: number,
-) {
-  let startTime = Date.now(); // timer
+export interface RateLimitMeta {
+  limit: number;
+  used: number;
+  resetTime: number;
+}
+export function throttleAPI<
+  R extends AxiosResponse<any>,
+  T extends (...args: any[]) => Promise<R>
+>(fn: T, getter: (result: R) => RateLimitMeta) {
+  let rateLimitCount = 10; // default
+  let rateLimitUsed = 0;
+  let rateLimitRemain = rateLimitCount - rateLimitUsed;
+  let rateLimitResetTime = ms2s(Date.now());
+
+  // let startTime = Date.now(); // timer
   let isRunning = false;
 
   const queue: QueueItem[] = [];
@@ -51,6 +64,13 @@ export function throttleAPI<T extends (...args: any[]) => Promise<any>>(
       });
       console.log('complete', task, result);
 
+      const meta = getter(result);
+      console.log('update meta:', meta);
+      rateLimitCount = meta.limit;
+      rateLimitUsed = meta.used;
+      rateLimitRemain = meta.limit - meta.used;
+      rateLimitResetTime = meta.resetTime;
+
       isRunning = false;
       if (queue.length > 0) processQueue(); // continue to excute next
     });
@@ -60,19 +80,21 @@ export function throttleAPI<T extends (...args: any[]) => Promise<any>>(
     if (isRunning) return;
 
     isRunning = true;
-    if (Date.now() - startTime < ms) {
-      if (completeArr.length < calls) {
+    const now = ms2s(Date.now());
+    if (now < rateLimitResetTime) {
+      if (rateLimitRemain > 0) {
+        console.log('remain is enough:', rateLimitRemain);
         runTask();
       } else {
-        const waitFor = ms - (Date.now() - startTime) + 10; // 10ms is buffer time
+        console.log('remain isnot enough');
+        const waitFor = (rateLimitResetTime - now) * 1000 + 10; // 10ms is buffer time
         console.log('wait for:', waitFor);
         window.setTimeout(() => {
           runTask();
         }, waitFor);
       }
     } else {
-      // refresh time
-      startTime = Date.now();
+      console.log('reset time updated', now, rateLimitResetTime);
       completeArr.splice(0, completeArr.length); // claer complete array
 
       runTask();
