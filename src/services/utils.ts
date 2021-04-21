@@ -1,5 +1,7 @@
 import { AxiosResponse } from 'axios';
 
+import { RATE_LIMIT_BUFFER } from './config';
+
 export const ms2s = (ms: number) => Math.floor(ms / 1000);
 
 export const sleep = (ms: number) =>
@@ -34,6 +36,12 @@ export interface RateLimitMeta {
   used: number;
   resetTime: number;
 }
+/**
+ * @description the throttle wrapper can be used to restrict API in specific frequencies at specific time
+ * @param fn wrapped API call
+ * @param getter rate-limit metadata getter
+ * @returns API call with times-throttle
+ */
 export function throttleAPI<
   R extends AxiosResponse<any>,
   T extends (...args: any[]) => Promise<R>
@@ -82,14 +90,18 @@ export function throttleAPI<
     isRunning = true;
     const now = ms2s(Date.now());
     if (now < rateLimitResetTime) {
+      // in current rate-limit period
       if (rateLimitRemain > 0) {
+        // valid count of API call
         console.log('remain is enough:', rateLimitRemain);
         runTask();
       } else {
+        // exceed rate-limit
         console.log('remain isnot enough');
-        const waitFor = (rateLimitResetTime - now) * 1000 + 10; // 10ms is buffer time
+        const waitFor = (rateLimitResetTime - now) * 1000 + RATE_LIMIT_BUFFER;
         console.log('wait for:', waitFor);
         window.setTimeout(() => {
+          // delayed excute
           runTask();
         }, waitFor);
       }
