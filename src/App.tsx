@@ -19,19 +19,23 @@ function App() {
     [repos.setKeyword],
   );
 
+  const handleListLoad = () => {
+    console.log('load new data');
+    if (repos.isLoading || !repos.hasMore) return;
+
+    return repos.next();
+  };
+
   return (
     <div className="App">
       <input type="text" onChange={handleKeywordChange} />
+      <h1>data length: {repos.data.length}</h1>
       <List
         items={repos.data}
         hasMore={repos.hasMore}
-        onLoad={() => console.log('load new data')}
+        isLoading={repos.isLoading}
+        onLoad={handleListLoad}
       />
-      {repos.isLoading ? (
-        <div className="laoding">Loading...</div>
-      ) : (
-        repos.hasMore && <button onClick={repos.next}>More</button>
-      )}
     </div>
   );
 }

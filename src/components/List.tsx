@@ -25,15 +25,16 @@ const observerOption: IntersectionObserverInit = {
 export interface Props {
   items: RepoItem[];
   hasMore: boolean;
+  isLoading: boolean;
   onLoad?: () => void;
 }
-const List = ({ items, hasMore, onLoad: handleLoad }: Props) => {
-  const loadingRef = useRef<HTMLDivElement | null>(null);
+const List = ({ items, hasMore, isLoading, onLoad: handleLoad }: Props) => {
+  const hasMoreRef = useRef<HTMLDivElement | null>(null);
 
   const observerCB = useCallback<IntersectionObserverCallback>(
     entries => {
       const loadingEntry = entries.find(
-        entry => entry.target === loadingRef.current,
+        entry => entry.target === hasMoreRef.current,
       );
 
       if (!loadingEntry) return;
@@ -45,12 +46,12 @@ const List = ({ items, hasMore, onLoad: handleLoad }: Props) => {
   useEffect(() => {
     // register intersection-observer
     const observer = new IntersectionObserver(observerCB, observerOption);
-    if (loadingRef.current) observer.observe(loadingRef.current);
+    if (hasMoreRef.current) observer.observe(hasMoreRef.current);
 
     // unregister observer after unmount
     return () => {
-      if (loadingRef.current) {
-        observer.unobserve(loadingRef.current);
+      if (hasMoreRef.current) {
+        observer.unobserve(hasMoreRef.current);
       }
     };
   }, [observerCB]);
@@ -67,12 +68,13 @@ const List = ({ items, hasMore, onLoad: handleLoad }: Props) => {
           url={item.html_url}
         />
       ))}
-
-      {hasMore && (
-        <div className="laoding" ref={loadingRef}>
+      {isLoading && (
+        <div className="loading">
           <Loading />
         </div>
       )}
+
+      {hasMore && <div className="has-more" ref={hasMoreRef}></div>}
     </Container>
   );
 };

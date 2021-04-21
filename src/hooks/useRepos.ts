@@ -35,7 +35,10 @@ export const useRepos = () => {
   const [data, setData] = useState<RepoItem[]>([]);
   const [keyword, setKeyword] = useState('');
 
-  const hasMore = useMemo(() => !!linkRef?.page, [linkRef]);
+  const hasMore = useMemo(() => !!linkRef?.page && data.length > 0, [
+    linkRef,
+    data,
+  ]);
 
   const fetchReposData = useCallback(async (keyword: string, page: number) => {
     setLoading(true);
@@ -78,13 +81,16 @@ export const useRepos = () => {
   );
 
   useEffect(() => {
+    setData([]); // clear data
+
     if (keyword === '') {
-      setData([]);
       return;
     }
 
-    setLoading(true); // if start to input, switch the loading to true
+    // if start to input, switch the loading to true
+    setLoading(true);
 
+    cancel(); // cancel previous call
     init(keyword);
     // fetchRepos is stable function
   }, [keyword]);
