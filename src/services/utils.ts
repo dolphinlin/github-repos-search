@@ -54,6 +54,7 @@ export function throttleAPI<
   // let startTime = Date.now(); // timer
   let isRunning = false;
   let waitTimer = -1;
+  let retryCount = 0;
 
   const queue: QueueItem[] = [];
   const completeArr: any[] = [];
@@ -64,25 +65,43 @@ export function throttleAPI<
 
     const { params, complete } = task;
 
-    fn(...params).then(result => {
-      complete(result);
-      completeArr.push({
-        task,
-        result,
-        time: Date.now(),
+    fn(...params)
+      .then(result => {
+        retryCount = 0; // reset retry count
+
+        complete(result);
+        completeArr.push({
+          task,
+          result,
+          time: Date.now(),
+        });
+        console.log('complete', task, result);
+
+        const meta = getter(result);
+        console.log('update meta:', meta);
+        rateLimitCount = meta.limit;
+        rateLimitUsed = meta.used;
+        rateLimitRemain = meta.limit - meta.used;
+        rateLimitResetTime = meta.resetTime;
+      })
+      .catch(error => {
+        /**
+         * @description retry once, prevent get API fail in first time
+         */
+        if (++retryCount > 1)
+          throw new Error(`[runTask] API throw error. ${error}`);
+
+        queue.unshift(task); // restore task to queue
+        const meta = getter(error.response);
+        rateLimitCount = meta.limit;
+        rateLimitUsed = meta.used;
+        rateLimitRemain = meta.limit - meta.used;
+        rateLimitResetTime = meta.resetTime;
+      })
+      .finally(() => {
+        isRunning = false;
+        if (queue.length > 0) processQueue(); // continue to excute next
       });
-      console.log('complete', task, result);
-
-      const meta = getter(result);
-      console.log('update meta:', meta);
-      rateLimitCount = meta.limit;
-      rateLimitUsed = meta.used;
-      rateLimitRemain = meta.limit - meta.used;
-      rateLimitResetTime = meta.resetTime;
-
-      isRunning = false;
-      if (queue.length > 0) processQueue(); // continue to excute next
-    });
   };
 
   const processQueue = () => {
