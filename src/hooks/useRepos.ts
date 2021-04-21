@@ -18,7 +18,7 @@ interface LinkRef {
   q: string;
 }
 
-const throttledGetRepos = throttleAPI(getReposByQuery, res => {
+const { fn: throttledGetRepos, cancel } = throttleAPI(getReposByQuery, res => {
   const { headers } = res;
 
   return {

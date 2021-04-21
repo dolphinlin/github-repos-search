@@ -53,6 +53,7 @@ export function throttleAPI<
 
   // let startTime = Date.now(); // timer
   let isRunning = false;
+  let waitTimer = -1;
 
   const queue: QueueItem[] = [];
   const completeArr: any[] = [];
@@ -100,7 +101,7 @@ export function throttleAPI<
         console.log('remain isnot enough');
         const waitFor = (rateLimitResetTime - now) * 1000 + RATE_LIMIT_BUFFER;
         console.log('wait for:', waitFor);
-        window.setTimeout(() => {
+        waitTimer = window.setTimeout(() => {
           // delayed excute
           runTask();
         }, waitFor);
@@ -113,7 +114,7 @@ export function throttleAPI<
     }
   };
 
-  return (...params: Parameters<T>): Promise<ReturnType<T>> =>
+  const wrappedFn = (...params: Parameters<T>): Promise<ReturnType<T>> =>
     new Promise(resolve => {
       const task = {
         params,
@@ -123,4 +124,21 @@ export function throttleAPI<
       queue.push(task);
       processQueue();
     });
+
+  const cancel = () => {
+    if (waitTimer !== -1) {
+      // clear timer
+      window.clearTimeout(waitTimer);
+      waitTimer = -1;
+      isRunning = false;
+
+      // continue process
+      if (queue.length > 0) processQueue();
+    }
+  };
+
+  return {
+    fn: wrappedFn,
+    cancel,
+  } as const;
 }
