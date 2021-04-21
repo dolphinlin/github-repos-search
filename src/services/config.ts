@@ -1,6 +1,5 @@
-export const REPO_SIZE = 10;
-export const MAX_REPO_SIZE = 1000; // github API limiation
-export const KEYWORD_DEBOUNCED_TIME = 500;
+export const REPO_SIZE = 20; // count of repos in one time
+export const KEYWORD_DEBOUNCED_TIME = 700;
 
 // For unauthenticated requests, the rate limit allows you to make up to 10 requests per minute.
 export const RATE_LIMIT_LIMIT = 10;

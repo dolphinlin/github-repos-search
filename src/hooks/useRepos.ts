@@ -5,7 +5,6 @@ import { getReposByQuery } from '../services/api';
 import { RepoItem } from '../services/types';
 import {
   REPO_SIZE,
-  MAX_REPO_SIZE,
   KEYWORD_DEBOUNCED_TIME,
   RATE_LIMIT_LIMIT,
   RATE_LIMIT_DURATION,
