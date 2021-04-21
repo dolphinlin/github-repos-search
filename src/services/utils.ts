@@ -59,6 +59,15 @@ export function throttleAPI<
   const queue: QueueItem[] = [];
   const completeArr: any[] = [];
 
+  const updateRateLimitMeta = (response: R) => {
+    const meta = getter(response);
+    console.log('update meta:', meta);
+    rateLimitCount = meta.limit;
+    rateLimitUsed = meta.used;
+    rateLimitRemain = meta.limit - meta.used;
+    rateLimitResetTime = meta.resetTime;
+  };
+
   const runTask = () => {
     const task = queue.shift();
     if (!task) return;
@@ -77,26 +86,17 @@ export function throttleAPI<
         });
         console.log('complete', task, result);
 
-        const meta = getter(result);
-        console.log('update meta:', meta);
-        rateLimitCount = meta.limit;
-        rateLimitUsed = meta.used;
-        rateLimitRemain = meta.limit - meta.used;
-        rateLimitResetTime = meta.resetTime;
+        updateRateLimitMeta(result);
       })
       .catch(error => {
         /**
-         * @description retry once, prevent get API fail in first time
+         * @description retry once, prevent to get API fail in first time
          */
         if (++retryCount > 1)
           throw new Error(`[runTask] API throw error. ${error}`);
 
         queue.unshift(task); // restore task to queue
-        const meta = getter(error.response);
-        rateLimitCount = meta.limit;
-        rateLimitUsed = meta.used;
-        rateLimitRemain = meta.limit - meta.used;
-        rateLimitResetTime = meta.resetTime;
+        updateRateLimitMeta(error.response);
       })
       .finally(() => {
         isRunning = false;
