@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import parseLinkHeader from 'parse-link-header';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import parseLinkHeader, { Link } from 'parse-link-header';
 
 import { getReposByQuery } from '../services/api';
 import { RepoItem } from '../services/types';
@@ -12,9 +12,9 @@ import {
 } from '../services/config';
 import { debounce, throttleAPI, ms2s } from '../services/utils';
 
-interface LinkRef {
-  page: number;
-  per_page: number;
+interface LinkRef extends Link {
+  page: string;
+  per_page: string;
   q: string;
 }
 
@@ -29,6 +29,7 @@ const { fn: throttledGetRepos, cancel } = throttleAPI(getReposByQuery, res => {
   };
 });
 
+const INIT_PAGE = 1;
 export const useRepos = () => {
   const [linkRef, setLinkRef] = useState<LinkRef | null>(null);
   const [isLoading, setLoading] = useState(false);
@@ -48,17 +49,15 @@ export const useRepos = () => {
       size: REPO_SIZE,
     });
 
+    // get next rel by header
     const { link } = result.headers;
     if (link) {
       const parsed = parseLinkHeader(link);
 
-      /**
-       * @TODO type assert
-       */
-      setLinkRef((parsed?.next as any) ?? null);
+      setLinkRef((parsed?.next as LinkRef) ?? null);
     }
 
-    if (page === 1) {
+    if (page === INIT_PAGE) {
       setData(result.data.items);
     } else {
       setData(preData => preData.concat(result.data.items));
@@ -66,18 +65,18 @@ export const useRepos = () => {
     setLoading(false);
   }, []);
 
-  const next = async () => {
+  const next = useCallback(async () => {
     if (isLoading || !linkRef) return;
 
-    fetchReposData(linkRef.q, linkRef.page);
-  };
+    fetchReposData(linkRef.q, +linkRef.page);
+  }, [isLoading, linkRef, fetchReposData]);
 
   const init = useMemo(
     () =>
       debounce((k: string) => {
-        fetchReposData(k, 1);
+        fetchReposData(k, INIT_PAGE);
       }, KEYWORD_DEBOUNCED_TIME),
-    [],
+    [fetchReposData],
   );
 
   useEffect(() => {
@@ -92,7 +91,6 @@ export const useRepos = () => {
 
     cancel(); // cancel previous call
     init(keyword);
-    // fetchRepos is stable function
   }, [keyword]);
 
   return {
