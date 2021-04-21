@@ -20,7 +20,7 @@ export interface RepoItem {
   language: string;
   forks_count: number;
   html_url: string;
-  archived: false;
-  disabled: false;
+  archived: boolean;
+  disabled: boolean;
   open_issues_count: number;
 }
