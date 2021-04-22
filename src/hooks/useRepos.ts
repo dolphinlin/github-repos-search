@@ -31,6 +31,9 @@ const { fn: throttledGetRepos, cancel } = throttleAPI(getReposByQuery, res => {
 
 const INIT_PAGE = 1;
 export const useRepos = () => {
+  /**
+   * @TODO use reducer to replace multiple state
+   */
   const [linkRef, setLinkRef] = useState<LinkRef | null>(null);
   const [isLoading, setLoading] = useState(false);
   const [data, setData] = useState<RepoItem[]>([]);
