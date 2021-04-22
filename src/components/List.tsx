@@ -61,7 +61,6 @@ const List = ({ items, hasMore, isLoading, onLoad: handleLoad }: Props) => {
       {items.map(item => (
         <Item
           key={item.id}
-          id={`${item.id}`}
           name={item.full_name}
           starsCount={item.stargazers_count}
           owner={item.owner.login}
