@@ -77,6 +77,7 @@ export const useRepos = () => {
   const init = useMemo(
     () =>
       debounce((k: string) => {
+        if (!k.trim()) return;
         fetchReposData(k, INIT_PAGE);
       }, KEYWORD_DEBOUNCED_TIME),
     [fetchReposData],
@@ -84,16 +85,15 @@ export const useRepos = () => {
 
   useEffect(() => {
     setData([]); // clear data
-
+    init(keyword);
     if (keyword === '') {
+      setLoading(false);
       return;
     }
 
     // if start to input, switch the loading to true
     setLoading(true);
-
     cancel(); // cancel previous call
-    init(keyword);
   }, [keyword]);
 
   return {
